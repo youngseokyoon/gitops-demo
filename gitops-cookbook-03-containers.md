@@ -133,7 +133,16 @@ paketo-buildpacks/gradle@7.6.0 로 지정을 한 이유, gradle@8 이상 부터�
 해당 부분 회피를 위해 7.6.0 으로 명시함.
 
 ## Buildah
+- https://github.com/containers/buildah
+- https://buildah.io/
 
+macOS 에서는 사용이 불가함.
+- https://github.com/containers/buildah/issues/5212
+
+Linux Container 에서 사용가능함
+
+참고링크:
+- https://devocean.sk.com/blog/techBoardDetail.do?ID=165515&boardType=techBlog
 
 ### 참고 문서
 - [Ubuntu 24.04  containerd 설정 방법](./containerd-configure-ubuntu-24.04.md)
