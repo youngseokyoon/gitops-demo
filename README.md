@@ -24,3 +24,8 @@
 - [Kustomize](./gitops-cookbook-04-kustomize.md)
 
 ---
+
+## 2025.10.19
+
+- [Helm](./gitops-cookbook-05-helm.md)
+- [Cloud Native CI/CD](./gitops-cookbook-06-cloud-native-cicd.md)
