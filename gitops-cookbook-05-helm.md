@@ -204,6 +204,45 @@ Helm client(admin / dev)에서 배포 → Pod/Service 실행
 
 ** lint → sign → verify → deploy 순서로 CI/CD를 구성하면, 어느 단계에서든 실패 시 배포 차단 가능하여 안전한 배포 가능 **
 
+
+## Helm + ConfigMap 기반 Rolling Update 가이드
+
+- bitnami/nginx 의 charts 는 수정하지 않음.
+
+Helm 차트에서 ConfigMap을 사용하여 애플리케이션 설정을 관리하는 경우, 설정 변경 시 롤링 업데이트를 트리거하기 위한 추가 구성이 필요함.
+
+* ConfigMap에 정의 및 해시 주석 추가: 
+ConfigMap에 설정 변경을 감지할 수 있는 해시 주석을 추가.
+  deploymentAnnotations
+
+```bash
+k apply -f k3s-nginx-config.yaml
+configmap/k3s-nginx-config created
+
+k get po
+NAME                         READY   STATUS    RESTARTS   AGE
+k3s-nginx-54bcc888f4-hbmvd   1/1     Running   0          84s
+k3s-nginx-54bcc888f4-tsb2d   1/1     Running   0          84s
+
+kubectl get configmap k3s-nginx-config -o json | sha256sum | awk '{print $1}'
+17d2b70addfe349ae609bd7680562fc253c46696f31f31897c96bd02d9e90c2b
+
+helm upgrade --install k3s-nginx bitnami/nginx \
+  -f k3s-nginx.yaml \
+  --set deploymentAnnotations.configmap-reload=17d2b70addfe349ae609bd7680562fc253c46696f31f31897c96bd02d9e90c2b
+```
+
+### [배포](./helmcharts/deploy-nginx.sh) 스크립트
+```bash
+CONFIG_HASH=$(kubectl get configmap k3s-nginx-config -o json | sha256sum | awk '{print $1}')
+echo "Configuration hash: $CONFIG_HASH"
+# CONFIG_HASH 는 추후 ArgoCD hook 에서 처리 예정.
+
+helm upgrade --install k3s-nginx bitnami/nginx \
+  -f k3s-nginx.yaml \
+  --set deploymentAnnotations.configmap-reload=$CONFIG_HASH
+```
+
 ---
 
 ## Reference Links

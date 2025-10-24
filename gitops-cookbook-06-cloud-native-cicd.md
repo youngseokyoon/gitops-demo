@@ -3,7 +3,10 @@
 ## Tekton
 아래는 Tekton 정리 초안이다. DevOps 엔지니어 기준으로 기술적 관점에서 작성했다.
 
-Tekton은 **Kubernetes 네이티브 CI/CD 프레임워크**로, 모든 구성요소가 CRD(Custom Resource Definition) 형태로 정의됨.
+Tekton은 **Kubernetes 네이티브 CI/CD 프레임워크**로, 
+모든 구성요소가 [CRD(Custom Resource Definition)](https://kubernetes.io/ko/docs/\concepts/extend-kubernetes/api-extension/custom-resources/) 
+형태로 정의됨.
+
 파이프라인 실행은 Pod 단위로 관리되며, 모든 Step은 개별 컨테이너로 동작함.
 
 ### 구성요소 관계
