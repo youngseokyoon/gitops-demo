@@ -93,9 +93,121 @@ k3s-nginx 삭제
 helm uninstall k3s-nginx
 ```
 
+## helm 차트 서명 및 검증
+helm 차트 무결성을 확인을 하기 위해서는 크게 3 단계 필요
+* 차트 패키징 + 서명 (package –sign)
+* 차트 검증 (verify)
+* 배포 (install/upgrade)
+
+환경별 역할 (admin, dev, Node) 및 가능 작업 정리
+
+| 환경  | 	GPG 개인키 | helm package –sign | helm verify | helm install/upgrade |
+|-----|----|----|----|----|
+| admin | 있음 | 가능 | 가능 | 가능 |
+| dev | 없음 | 불가 (--sign) | 실패 (서명 없는 차트) | 가능 |
+| Node | 없음 | 불가 | 불가 | 가능 |
+
+핵심: GPG 인증은 배포 자체를 가능하게 하는 것이 아니라, 검증된 차트를 생성하여 CI/CD에서 신뢰성을 확보하는 목적임.
+
+### 차트 패키징 + 서명 (package –sign)
+admin (GPG 개인키 있는 PC) 에서 수행 됨, helm 차트 생성, 서명, 검증, 배포.
+
+**헬를 차트에서 사용될 서명 생성하기**
+```bash
+brew install gnupg
+gpg --full-generate-key
+
+gpg (GnuPG) 2.4.8; Copyright (C) 2025 g10 Code GmbH
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+Please select what kind of key you want:
+   (1) RSA and RSA
+   (2) DSA and Elgamal
+   (3) DSA (sign only)
+   (4) RSA (sign only)
+   (9) ECC (sign and encrypt) *default*
+  (10) ECC (sign only)
+  (14) Existing key from card
+Your selection? 1
+RSA keys may be between 1024 and 4096 bits long.
+What keysize do you want? (3072) 2048
+Requested keysize is 2048 bits
+Please specify how long the key should be valid.
+         0 = key does not expire
+      <n>  = key expires in n days
+      <n>w = key expires in n weeks
+      <n>m = key expires in n months
+      <n>y = key expires in n years
+Key is valid for? (0) 0
+Key does not expire at all
+Is this correct? (y/N) y
+
+GnuPG needs to construct a user ID to identify your key.
+
+Real name: [Name]
+Email address: [E-Mail]
+Comment: [Comment]
+
+<snip>
+
+```
+
+**헬를 차트에 차트 패키징**
+```bash
+
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+helm pull bitnami/nginx --untar
+cd nginx
+
+cd ..
+helm package nginx --sign --key "Ricky <ricky@example.com>"
+```
+
+**공개키 export (dev / CI 환경용)**
+```bash
+gpg --export -a "Ricky <ricky@example.com>" > publickey.asc
+```
+
+### 차트 검증 (verify)
+```bash
+helm verify nginx-<ver>.tgz
+```
+
+dev 에서는 charts 검증을 위해선 admin 에서 export 한 공개키가 필요함
+```bash
+gpg --import publickey.asc
+helm verify nginx-<ver>.tgz
+```
+
+### 배포 (install/upgrade)
+```bash
+helm install k3s-nginx ./nginx-<ver>.tgz -f k3s-nginx.yaml
+
+helm upgrade k3s-nginx ./nginx-<ver>.tgz -f k3s-nginx.yaml
+```
+
+
+## CI/CD 배포 흐름 예시
+
+[ admin ]
+helm pull → helm package --sign → helm verify → helm install/upgrade
+│
+└─ 공개키 export → [ dev / CI 환경 ]
+
+[ dev / CI ]
+gpg --import publickey.asc → helm verify → helm install/upgrade
+
+[ Node (k3s cluster) ]
+Helm client(admin / dev)에서 배포 → Pod/Service 실행
+
+** lint → sign → verify → deploy 순서로 CI/CD를 구성하면, 어느 단계에서든 실패 시 배포 차단 가능하여 안전한 배포 가능 **
+
 ---
 
 ## Reference Links
 - [Bitnami Secure Images](https://techdocs.broadcom.com/us/en/vmware-tanzu/bitnami-secure-images/bitnami-secure-images/services/bsi-doc/index.html)
 - [Bitnami Secure Images Docker hub](https://hub.docker.com/u/bitnamisecure)
 - [Bitnami GitHub Helm Charts]( https://github.com/bitnami/charts)
+- [헬름 출처 및 무결성](https://helm.sh/ko/docs/topics/provenance/)
