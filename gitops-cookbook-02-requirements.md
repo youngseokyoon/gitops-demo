@@ -79,13 +79,17 @@ export KUBECONFIG=/Users/<Username>/Downloads/kind/config
 ```
 
 클러스터 생성하기
+- [kind-cluster.yaml](./assets/kind-cluster.yaml)
+
 ```bash
 # 클러스터 배포 전 확인
 docker info
 docker ps
 
 # Create a cluster with kind
-kind create cluster --name myk8s --image kindest/node:v1.32.8 --config - <<EOF
+kind create cluster --name myk8s --image kindest/node:v1.32.8 --config kind-cluster.yaml
+
+cat kind-cluster.yaml
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
@@ -96,8 +100,6 @@ nodes:
   - containerPort: 30001
     hostPort: 30001
 - role: worker
-EOF
-
 
 # 확인
 docker images
