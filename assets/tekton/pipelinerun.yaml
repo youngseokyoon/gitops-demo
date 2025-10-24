@@ -1,0 +1,7 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: build-test-run
+spec:
+  pipelineRef:
+    name: build-test-pipeline
