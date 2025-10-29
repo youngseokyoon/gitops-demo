@@ -90,7 +90,7 @@ e.g) ssh 연결을 통해 연결한 경우
 * type: git
 * url: https://github.com/youngseokyoon/jenkinsci-helm-charts
 
-![Add Repository](./assets/argocd-add-repository.png)
+![Add Repository](../../assets/argocd-add-repository.png)
 
 # Application 생성
 jenkinsci-helm-charts 저장소에 있는 jenkins helm 차트를 배포하기 위한 Application 생성.
@@ -104,5 +104,6 @@ Applications -> NEW APP 클릭
 * Repository URL: git@github.com:youngseokyoon/jenkinsci-helm-charts.git
 
 Sync 후 결과
+
 ![jenkins.png](../../assets/argocd-jenkins-ok.png)
 
