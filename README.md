@@ -29,3 +29,7 @@
 
 - [Helm](./gitops-cookbook-05-helm.md)
 - [Cloud Native CI/CD](./gitops-cookbook-06-cloud-native-cicd.md)
+
+## 2025.10.26
+
+- [Jenkins](./helmcharts/jenkins/jenkins-configure-kind.md)
