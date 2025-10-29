@@ -87,19 +87,44 @@ docker info
 docker ps
 
 # Create a cluster with kind
-kind create cluster --name myk8s --image kindest/node:v1.32.8 --config kind-cluster.yaml
+kind create cluster --config kind-cluster.yaml
 
 cat kind-cluster.yaml
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
+name: myk8s
+networking:
+  apiServerAddress: "0.0.0.0"
 nodes:
-- role: control-plane
-  extraPortMappings:
-  - containerPort: 30000
-    hostPort: 30000
-  - containerPort: 30001
-    hostPort: 30001
-- role: worker
+  - role: control-plane
+    image: kindest/node:v1.32.8
+    extraPortMappings:
+      - containerPort: 30000
+        hostPort: 30000
+      - containerPort: 30001
+        hostPort: 30001
+      - containerPort: 30002
+        hostPort: 30002
+      - containerPort: 30003
+        hostPort: 30003
+      - containerPort: 30004
+        hostPort: 30004
+      - containerPort: 30005
+        hostPort: 30005
+  - role: worker
+    image: kindest/node:v1.32.8
+    labels:
+      app: jenkins
+    extraMounts:
+      - hostPath: /private/var/persist/jenkins
+        containerPath: /private/var/persist/jenkins
+  - role: worker
+    image: kindest/node:v1.32.8
+    labels:
+      app: argocd
+    extraMounts:
+      - hostPath: /private/var/persist/argocd
+        containerPath: /private/var/persist/argocd
 
 # 확인
 docker images
@@ -137,4 +162,9 @@ cat ~/.kube/config
 cat $KUBECONFIG
 ```
 
-
+| Port  | Service       | Description             |
+|-------|---------------|-------------------------|
+| 30000 | TBD           | For deploy test service |
+| 30001 | kube-ops-view |                         |
+| 30002 | ArgoCD        | ArgoCD HTTP             |
+| 30003 | Jenkins       | Jenkins HTTP            |
