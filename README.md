@@ -32,5 +32,5 @@
 
 ## 2025.10.26
 
-- [Jenkins](./docs/jenkins/jenkins-configure-kind.md)
+- [Jenkins](./docs/jenkins/jenkins.md)
 - [Argo CD](./docs/argocd/argocd-configure-kind.md)
