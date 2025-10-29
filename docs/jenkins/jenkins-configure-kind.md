@@ -2,7 +2,7 @@ macOS 환경에서 kind k8s 클러스터에 Jenkins 를 helm 사용하여 설치
 
 # Prerequisites
 * kubectl
-* kind 클러스터 설정 [kind-cluster.yaml](../../assets/kind-cluster.yaml)
+* [kind 클러스터 설정](../kubernetes-configure-kind.md)
 * CICD Storage Class 설정 (optional: PV 생성 시 default storageclass 로 설정 해도 됨)
 [cicd-storageclass.yaml](./cicd-storageclass.yaml)
 
