@@ -53,7 +53,7 @@ cd nginx
 ```
 Helm 차트 디렉터리 구조
 
-![helm-bitnami-nginx.png](./assets/helm-bitnami-nginx.png)
+![helm-bitnami-nginx.png](../../assets/helm-bitnami-nginx.png)
 
 ## nginx 배포
 name: k3s-nginx
@@ -101,11 +101,11 @@ helm 차트 무결성을 확인을 하기 위해서는 크게 3 단계 필요
 
 환경별 역할 (admin, dev, Node) 및 가능 작업 정리
 
-| 환경  | 	GPG 개인키 | helm package –sign | helm verify | helm install/upgrade |
-|-----|----|----|----|----|
-| admin | 있음 | 가능 | 가능 | 가능 |
-| dev | 없음 | 불가 (--sign) | 실패 (서명 없는 차트) | 가능 |
-| Node | 없음 | 불가 | 불가 | 가능 |
+| 환경    | 	GPG 개인키 | helm package –sign | helm verify   | helm install/upgrade |
+|-------|----------|--------------------|---------------|----------------------|
+| admin | 있음       | 가능                 | 가능            | 가능                   |
+| dev   | 없음       | 불가 (--sign)        | 실패 (서명 없는 차트) | 가능                   |
+| Node  | 없음       | 불가                 | 불가            | 가능                   |
 
 핵심: GPG 인증은 배포 자체를 가능하게 하는 것이 아니라, 검증된 차트를 생성하여 CI/CD에서 신뢰성을 확보하는 목적임.
 
@@ -232,7 +232,7 @@ helm upgrade --install k3s-nginx bitnami/nginx \
   --set deploymentAnnotations.configmap-reload=17d2b70addfe349ae609bd7680562fc253c46696f31f31897c96bd02d9e90c2b
 ```
 
-### [배포](./helmcharts/deploy-nginx.sh) 스크립트
+### [배포](../../helmcharts/deploy-nginx.sh) 스크립트
 ```bash
 CONFIG_HASH=$(kubectl get configmap k3s-nginx-config -o json | sha256sum | awk '{print $1}')
 echo "Configuration hash: $CONFIG_HASH"

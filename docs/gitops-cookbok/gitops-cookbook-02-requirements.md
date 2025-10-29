@@ -79,7 +79,7 @@ export KUBECONFIG=/Users/<Username>/Downloads/kind/config
 ```
 
 클러스터 생성하기
-- [kind-cluster.yaml](./assets/kind-cluster.yaml)
+- [kind-cluster.yaml](../../assets/kind-cluster.yaml)
 
 ```bash
 # 클러스터 배포 전 확인
@@ -166,9 +166,13 @@ cat ~/.kube/config
 cat $KUBECONFIG
 ```
 
-| Port  | Service       | Description             |
-|-------|---------------|-------------------------|
-| 30000 | TBD           | For deploy test service |
-| 30001 | kube-ops-view |                         |
-| 30002 | ArgoCD        | ArgoCD HTTP             |
-| 30003 | Jenkins       | Jenkins HTTP            |
+## 포트 매핑 정보
+
+| Port  | Service       | Description  |
+|-------|---------------|--------------|
+| 30000 | TBD           | TBD          |
+| 30001 | kube-ops-view |              |
+| 30002 | ArgoCD        | ArgoCD HTTP  |
+| 30003 | Jenkins       | Jenkins HTTP |
+| 30004 | TBD           | TBD          |
+| 30005 | TBD           | TBD          |
