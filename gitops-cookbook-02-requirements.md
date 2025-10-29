@@ -86,6 +86,10 @@ export KUBECONFIG=/Users/<Username>/Downloads/kind/config
 docker info
 docker ps
 
+# Persistent Volume 용 디렉토리 생성
+mkdir -p /private/var/persist/jenkins
+mkdir -p /private/var/persist/argocd
+
 # Create a cluster with kind
 kind create cluster --config kind-cluster.yaml
 

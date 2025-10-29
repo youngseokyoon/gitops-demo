@@ -51,5 +51,5 @@ helm install cicd-jenkins -n cicd-jenkins -f jenkins-5.8.104.yaml charts/jenkins
 ```
 
 # 참고 링크
-https://github.com/jenkinsci/helm-charts
-https://artifacthub.io/packages/helm/jenkinsci/jenkins
+- https://github.com/jenkinsci/helm-charts
+- https://artifacthub.io/packages/helm/jenkinsci/jenkins
