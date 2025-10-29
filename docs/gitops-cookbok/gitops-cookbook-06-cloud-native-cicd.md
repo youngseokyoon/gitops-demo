@@ -26,7 +26,7 @@ Trigger → PipelineRun → Pipeline → Task → Step(Container)
 ### CRD별 상세 정의
 
 | CRD                 | 설명                      | 주요 필드                                      |
-| ------------------- | ----------------------- | ------------------------------------------ |
+|---------------------|-------------------------|--------------------------------------------|
 | **Task**            | 실행 가능한 단일 작업 정의         | steps, params, workspaces                  |
 | **Pipeline**        | 여러 Task를 순차/병렬 실행       | tasks, params, workspaces                  |
 | **TaskRun**         | Task의 실행 인스턴스           | taskRef, params, workspaces                |
@@ -66,10 +66,10 @@ tkn version
 
 **예시: 간단한 Build → Test 파이프라인**
 
-* [task-build.yaml](./assets/tekton/task-build.yaml)
-* [task-test.yaml](./assets/tekton/task-test.yaml)
-* [pipeline.yaml](./assets/tekton/pipeline.yaml)
-* [pipelinerun.yaml](./assets/tekton/pipelinerun.yaml)
+* [task-build.yaml](../../assets/tekton/task-build.yaml)
+* [task-test.yaml](../../assets/tekton/task-test.yaml)
+* [pipeline.yaml](../../assets/tekton/pipeline.yaml)
+* [pipelinerun.yaml](../../assets/tekton/pipelinerun.yaml)
 
 실행:
 

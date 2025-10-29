@@ -18,17 +18,17 @@
 
 ## 2025.10.12
 
-- [Introduction](./gitops-cookbook-01-introduction.md)
-- [Requirements](./gitops-cookbook-02-requirements.md)
-- [Containers](./gitops-cookbook-03-containers.md)
-- [Kustomize](./gitops-cookbook-04-kustomize.md)
+- [Introduction](./docs/gitops-cookbok/gitops-cookbook-01-introduction.md)
+- [Requirements](./docs/gitops-cookbok/gitops-cookbook-02-requirements.md)
+- [Containers](./docs/gitops-cookbok/gitops-cookbook-03-containers.md)
+- [Kustomize](./docs/gitops-cookbok/gitops-cookbook-04-kustomize.md)
 
 ---
 
 ## 2025.10.19
 
-- [Helm](./gitops-cookbook-05-helm.md)
-- [Cloud Native CI/CD](./gitops-cookbook-06-cloud-native-cicd.md)
+- [Helm](./docs/gitops-cookbok/gitops-cookbook-05-helm.md)
+- [Cloud Native CI/CD](./docs/gitops-cookbok/gitops-cookbook-06-cloud-native-cicd.md)
 
 ## 2025.10.26
 

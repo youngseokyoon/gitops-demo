@@ -15,13 +15,13 @@ GitOps 실습의 핵심은 **컨테이너 기반 애플리케이션**이다.
 
 Docker 는 익숙하기에 다른 툴을 찾아봤음.
 
-| 도구 | macOS 실행 가능 여부| 설명 |
-|-------|------------|-------|
-| Docker CLI | 지원| Docker Desktop 환경에서 기본적으로 사용. CLI 기반 이미지 빌드 표준|
-| Jib| 지원 (Java Only)| JVM 기반, Gradle/Maven 플러그인 형태으로 Dockerfile 없이 빌드 가능함|
-| Buildah| 제한적으로 지원 (Linux 환경에서 많이 사용이 됨) | macOS에서는 직접적으로 실행이 불가함|
-| Buildpacks | 지원| Cloud Native Buildpacks 표준. Docker Desktop과 연동됨. 언어 자동 감지 빌드|
-| Shipwright | 불가| Kubernetes 클러스터내에서 동작됨|
+| 도구         | macOS 실행 가능 여부                 | 설명                                                           |
+|------------|--------------------------------|--------------------------------------------------------------|
+| Docker CLI | 지원                             | Docker Desktop 환경에서 기본적으로 사용. CLI 기반 이미지 빌드 표준               |
+| Jib        | 지원 (Java Only)                 | JVM 기반, Gradle/Maven 플러그인 형태으로 Dockerfile 없이 빌드 가능함          |
+| Buildah    | 제한적으로 지원 (Linux 환경에서 많이 사용이 됨) | macOS에서는 직접적으로 실행이 불가함                                       |
+| Buildpacks | 지원                             | Cloud Native Buildpacks 표준. Docker Desktop과 연동됨. 언어 자동 감지 빌드 |
+| Shipwright | 불가                             | Kubernetes 클러스터내에서 동작됨                                       |
 
 Docker, Jib, Buildpacks, Buildah 를 사용하여 빌드 예정
 
@@ -145,6 +145,5 @@ Linux Container 에서 사용가능함
 - https://devocean.sk.com/blog/techBoardDetail.do?ID=165515&boardType=techBlog
 
 ### 참고 문서
-- [Ubuntu 24.04  containerd 설정 방법](./containerd-configure-ubuntu-24.04.md)
-- [기본 containerd 설정 값](./assets/containerd-default-config.toml)
-
+- [Ubuntu 24.04  containerd 설정 방법](../containerd/containerd-configure-ubuntu-24.04.md)
+- [기본 containerd 설정 값](../../assets/containerd-default-config.toml)
