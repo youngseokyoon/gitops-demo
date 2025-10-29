@@ -32,4 +32,5 @@
 
 ## 2025.10.26
 
-- [Jenkins](./helmcharts/jenkins/jenkins-configure-kind.md)
+- [Jenkins](./docs/jenkins/jenkins-configure-kind.md)
+- [Argo CD](./docs/argocd/argocd-configure-kind.md)
