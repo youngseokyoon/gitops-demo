@@ -1,14 +1,24 @@
 # Multipass
 
+해당 문서는 Ubuntu 24.04 PC 기준으로 작성 됨.
+
+Multipass is a lightweight VM manager for Linux, Windows and macOS. 
+It's designed for developers who want to spin up a fresh Ubuntu environment with a single command. 
+It uses KVM on Linux, Hyper-V on Windows and QEMU on macOS to run virtual machines with minimal overhead. 
+It can also use VirtualBox on Windows and macOS. 
+Multipass will fetch Ubuntu images for you and keep them up to date.
+
+Since it supports metadata for cloud-init, you can simulate a small cloud deployment on your laptop or workstation.
+
 https://canonical.com/multipass
 
-canonical 에서 공식적으로 제공하는 Ubuntu VM 생성 툴.
-Kubernetes 검증 시 가상 Node 가 필요한 경우가 있는데, 이때 사용할 수 있는 툴로 생각됨.
+- **cloud-init 를 지원함.**
+- canonical 에서 공식적으로 제공하는 Ubuntu VM 생성 툴.
 
-# Install
+## Install
 https://canonical.com/multipass/install
 
-Linux, Windows, MacOS 모두 지원함.
+- Linux, Windows, MacOS 모두 지원함.
 
 ```bash
 # Ubuntu 24.04 에서는 snap 을 사용하여 설치 가능.
@@ -17,68 +27,118 @@ sudo snap install multipass
 multipass 1.16.1 from Canonical✓ installed
 ```
 
-
-# Node 생성
-multipass.gui 에서 생성을 해도 되고, 위의 문서를 참고해서 CLI 환경에서 생성을 해도 됨.
-
-- jenkins-0 로 생성함.
+### KVM/Libvirt 설치
+multipass 에서는 bridge network 를 지원함.
+virbr 생성을 위해 libvirt 설치함.
 
 ```bash
-multipass info jenkins-0 
+sudo apt update
+sudo apt install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virt-manager
 
-Name:           jenkins-0
-State:          Running
-Snapshots:      0
-IPv4:           10.21.166.79
-                10.0.1.130
-Release:        Ubuntu 24.04.3 LTS
-Image hash:     85743244cc8f (Ubuntu 24.04 LTS)
-CPU(s):         4
-Load:           0.68 0.16 0.05
-Disk usage:     3.4GiB out of 19.3GiB
-Memory usage:   706.1MiB out of 7.7GiB
-Mounts:         /home/ryoon/volumes/jenkins-persist => /private/var/persist/jenkins
-                    UID map: 1000:default
-                    GID map: 1000:default
+sudo usermod -aG libvirt $USER
+sudo usermod -aG kvm $USER
+
+sudo systemctl enable libvirtd
+sudo systemctl start libvirtd
+systemctl status libvirtd
 ```
 
-# jenkins-0 Node join, k3s cluster
-https://docs.k3s.io/quick-start
+### Multipass 네트워크 설정 변경하기
 
-k3s 에서 join 을 시키려면 k3s control plain 의 IP와 TOKEN 이 필요함
-아래의 명령어를 참고해서 각각 획득.
+설정 으로 이동 후 Virtualization 에서 내용 확인
+Driver: QEMU
+Bridged network: virbr0
 
+## Node 설정
+jenkins-0, argocd-0 생성 예정.
+
+| name      | cpu | memory | disk   | volume                                                           | note                       |
+|-----------|-----|--------|--------|------------------------------------------------------------------|----------------------------|
+| jenkins-0 | 4   | 8 GiB  | 20 Gib | /home/ryoon/volumes/jenkins-persist:/private/var/persist/jenkins | jenkins-pv 사용을 위해 설정이 필요함  |
+| argocd-0  | 4   | 8 GiB  | 20 Gib |                                                                  |                            |
+
+
+
+### Node 생성하기
+Multipass 는 GUI 도 지원함.
+
+```bash
+# argocd-0 생성
+multipass launch --name argocd-0 --cpus 4 --memory 8G --disk 20G --network mpqemubr0
+
+# jenkins-0 생성
+multipass launch --name jenkins-0 --cpus 4 --memory 8G --disk 20G --network virbr0 \
+  --mount /home/ryoon/volumes/jenkins-persist:/private/var/persist/jenkins
+```
+
+### k3s cluster 에 Node join 시키기
+k3s cluster 에서 join 을 시키기 위해선 k3s control plain 의 IP와 TOKEN 이 필요함
+
+- virbr0 사용예정
+```bash
+nmcli d show virbr0 | grep IP
+
+IP4.ADDRESS[1]:                         192.168.122.1/24
+IP4.GATEWAY:                            --
+IP4.ROUTE[1]:                           dst = 192.168.122.0/24, nh = 0.0.0.0, mt = 0
+IP6.GATEWAY:                            --
+```
+
+e.g)
 ```bash
 sudo cat /var/lib/rancher/k3s/server/node-token
 K10ac47517ef2939eec0b384dba37cb387d754c7caa54427cb3accab1d0a1d1e5eb::server:00ce5daf9ab813ca7fa1bf5b3d99ec63
 
 hostname -I
-10.88.57.219 10.4.0.1 10.0.0.95 10.21.166.1 
-
-hostname -l
-127.0.1.1
+172.30.1.60 10.0.0.95 192.168.122.1 10.21.166.1
 ```
 
-join 을 하려면 실제 node(jenkins-0) 에 접속을 해서 join 명령어를 입력해야 함.
-multipass 에서는 shell 명령어로 각각의 node 에 접속을 할 수 있음.
+IP: 192.168.122.1
+TOKEN: K10ac47517ef2939eec0b384dba37cb387d754c7caa54427cb3accab1d0a1d1e5eb::server:00ce5daf9ab813ca7fa1bf5b3d99ec63
+
+각 node 에 접속 후 join 명령어 입력, multipass exec 도 사용가능
 
 ```bash
-multipass shell jenkins-0 
+# argocd-0 node 접속
+$ multipass shell argocd-0 
 
-ubuntu@jenkins-0:~$ 
-ubuntu@jenkins-0:~$ curl -sfL https://get.k3s.io | \
-K3S_URL="https://10.88.57.219:6443" \
+# k3s cluster 에 join
+ubuntu@argocd-0:~$ curl -sfL https://get.k3s.io | \
+K3S_URL="https://10.21.166.1:6443" \
 K3S_TOKEN="K10ac47517ef2939eec0b384dba37cb387d754c7caa54427cb3accab1d0a1d1e5eb::server:00ce5daf9ab813ca7fa1bf5b3d99ec63" \
-sh - 
+sh -
+[INFO]  Finding release for channel stable
+[INFO]  Using v1.33.5+k3s1 as release
+[INFO]  Downloading hash https://github.com/k3s-io/k3s/releases/download/v1.33.5+k3s1/sha256sum-amd64.txt
+
+<snip>
+
+[INFO]  systemd: Enabling k3s-agent unit
+Created symlink /etc/systemd/system/multi-user.target.wants/k3s-agent.service → /etc/systemd/system/k3s-agent.service.
+[INFO]  systemd: Starting k3s-agent
 ```
 
-## node 상태 확인
+### Node label 설정 - optional
+
+각 node 에 label 설정 
+jenkins-0: app=jenkins
+argocd-0: app=argocd
+
 ```bash
- k get no
+kubectl get no
 NAME        STATUS   ROLES                  AGE   VERSION
-jenkins-0   Ready    <none>                 54s   v1.33.5+k3s1
-ryoon-l1    Ready    control-plane,master   36d   v1.33.4+k3s1
+argocd-0    Ready    <none>                 45m   v1.33.5+k3s1
+jenkins-0   Ready    <none>                 43m   v1.33.5+k3s1
+ryoon-l1    Ready    control-plane,master   37d   v1.33.4+k3s1
+
+kubectl label nodes jenkins-0 app=jenkins
+node/jenkins-0 labeled
+
+kubectl label nodes argocd-0 app=argocd
+node/argocd-0 labeled
 ```
 
 # 참고 링크
 - https://documentation.ubuntu.com/multipass/latest/
+- https://github.com/canonical/multipass
+- https://docs.k3s.io/quick-start
