@@ -4,7 +4,7 @@ macOS 환경에서 kind k8s 클러스터에 ArgoCD 를 helm 사용하여 설치�
 * kubectl
 * [kind 클러스터 설정](../kubernetes-configure-kind.md)
 * CICD Storage Class 설정 (optional: PV 생성 시 default storageclass 로 설정 해도 됨)
-  [cicd-storageclass.yaml](./cicd-storageclass.yaml)
+  [cicd-storageclass.yaml](../../helmcharts/jenkins/cicd-storageclass.yaml)
 
 # ArgoCD 설정
 ## Namespace 생성
@@ -13,7 +13,7 @@ kubectl create ns argocd
 ```
 
 ## PersistentVolume 생성 (optional)
-- [jenkins-persistence.yaml](./jenkins-persistence.yaml)
+- [jenkins-persistence.yaml](../../helmcharts/jenkins/jenkins-persistence.yaml)
 
 kind 로 구성할 때 2개의 워커 노드를 설정을 하였고, 각각 jenkins, argocd 를 위한 hostPath 지정함.
 
@@ -25,25 +25,25 @@ kubectl apply -f jenkins-persistence.yaml
 ## Helm 차트 다운로드
 - 필요한 버전을 확인 후 다운로드
 
-2025.10.29 기준 최신 버전 9.0.5
+2025.11.06 기준 최신 버전 9.1.0
 - https://artifacthub.io/packages/helm/argo/argo-cd
 
 ```bash
 helm repo add argo https://argoproj.github.io/argo-helm
 helm repo update
 
-helm pull argo/argo-cd  --version 9.0.5 --untar
+helm pull argo/argo-cd  --version 9.1.0 --untar
 ```
 
-## values.yaml 파일 생성 (9.0.5 기준)
+## http 로 동작하는 values.yaml 파일 생성 (9.1.0 기준)
 
-[argocd-values.yaml](../argocd-values.yaml)
+[argocd-http-values.yaml](../../helmcharts/argocd/argocd-http-values.yaml)
 
 ## ArgoCD Helm 차트 설치
 ```bash
-helm install argocd argo/argo-cd -n argocd -f argocd-values.yaml
+helm install argocd argo/argo-cd -n argocd -f argocd-http-values.yaml
 
-helm upgrade argocd argo/argo-cd -n argocd -f argocd-values.yaml
+helm upgrade argocd argo/argo-cd -n argocd -f argocd-http-values.yaml
 ```
 
 ## 동작 검증 
@@ -132,7 +132,6 @@ d71a852044a40038e4d93beee385b05109602b89 (HEAD -> dev, origin/dev) Controller: U
 이 후 
 http://127.0.0.1:30003/ 접속을 하면 수정한 메시지가 표시됨을 확인.
 ![jenkins-welcome2.png](../../assets/argocd-jenkins-updated-welcome-msg.png)
-
 
 ## ArgoCD CLI
 https://github.com/argoproj/argo-cd/releases/ 에서 운영체제에 맞는 CLI 다운로드
