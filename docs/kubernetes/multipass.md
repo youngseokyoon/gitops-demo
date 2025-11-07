@@ -27,27 +27,11 @@ sudo snap install multipass
 multipass 1.16.1 from Canonical✓ installed
 ```
 
-### KVM/Libvirt 설치
-multipass 에서는 bridge network 를 지원함.
-virbr 생성을 위해 libvirt 설치함.
-
-```bash
-sudo apt update
-sudo apt install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virt-manager
-
-sudo usermod -aG libvirt $USER
-sudo usermod -aG kvm $USER
-
-sudo systemctl enable libvirtd
-sudo systemctl start libvirtd
-systemctl status libvirtd
-```
-
 ### Multipass 네트워크 설정 변경하기
 
 설정 으로 이동 후 Virtualization 에서 내용 확인
 Driver: QEMU
-Bridged network: virbr0
+Bridged network: mpqemubr0
 
 ## Node 설정
 jenkins-0, argocd-0 생성 예정.
@@ -58,7 +42,6 @@ jenkins-0, argocd-0 생성 예정.
 | argocd-0  | 4   | 8 GiB  | 20 Gib |                                                                  |                            |
 
 
-
 ### Node 생성하기
 Multipass 는 GUI 도 지원함.
 
@@ -67,21 +50,18 @@ Multipass 는 GUI 도 지원함.
 multipass launch --name argocd-0 --cpus 4 --memory 8G --disk 20G --network mpqemubr0
 
 # jenkins-0 생성
-multipass launch --name jenkins-0 --cpus 4 --memory 8G --disk 20G --network virbr0 \
+multipass launch --name jenkins-0 --cpus 4 --memory 8G --disk 20G --network mpqemubr0 \
   --mount /home/ryoon/volumes/jenkins-persist:/private/var/persist/jenkins
 ```
 
 ### k3s cluster 에 Node join 시키기
 k3s cluster 에서 join 을 시키기 위해선 k3s control plain 의 IP와 TOKEN 이 필요함
 
-- virbr0 사용예정
-```bash
-nmcli d show virbr0 | grep IP
+- mpqemubr0 사용예정
 
-IP4.ADDRESS[1]:                         192.168.122.1/24
-IP4.GATEWAY:                            --
-IP4.ROUTE[1]:                           dst = 192.168.122.0/24, nh = 0.0.0.0, mt = 0
-IP6.GATEWAY:                            --
+```bash
+ nmcli d show mpqemubr0 | grep ADDRESS
+IP4.ADDRESS[1]:                         10.21.166.1/24
 ```
 
 e.g)
@@ -136,6 +116,21 @@ node/jenkins-0 labeled
 
 kubectl label nodes argocd-0 app=argocd
 node/argocd-0 labeled
+```
+
+## troubleshooting
+### mpqemubr0 연결이 간혹 끊어지는 현상이 발생함.
+tap 연결 향상을 위해 stp 설정을 on 으로 변경함.
+
+```bash
+sudo brctl stp mpqemubr0 on
+```
+
+### WiFi 절전모드 해제
+```bash
+sudo vi /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
+[connection]
+wifi.powersave = 2
 ```
 
 # 참고 링크
