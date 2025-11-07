@@ -5,6 +5,7 @@ This example demonstrates how to set up Kubernetes Ingress resources to expose A
 - A running Kubernetes cluster
 - ArgoCD and Jenkins deployed in the cluster.
 - traefik ingress controller installed in the cluster.
+- secret tls-ingress-certificate created in the namespace where ArgoCD and Jenkins are deployed. [secret.md](./tls-secret.md)
 
 ## Create ArgoCD Ingress
 Create an Ingress resource for ArgoCD. Save the following YAML as argocd-ingress.yaml
