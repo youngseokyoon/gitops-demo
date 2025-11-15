@@ -76,7 +76,7 @@ jm7nLuQqTg1U3T3L
 
 ## 비밀번호 변경
 위에서 얻은 초기 admin 비밀번호를 사용하여 비밀번호 변경.
-e.g) admin:argopass
+e.g) admin:argocd2025
 
 localhost:30002 접속 후 User Info -> UPDATE PASSWORD 클릭 후 암호 변경.
 

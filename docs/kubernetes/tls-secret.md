@@ -2,7 +2,7 @@
 
 ## 개요
 - 로컬 루트 CA를 생성.
-- `argocd.cicd.com`, `jenkins.cicd.com` 도메인용 인증서를 생성.
+- `argocd.cicd.com`, `jenkins.cicd.com`, `keycloak.cicd.com` 도메인용 인증서를 생성.
 - kubernetes에 secret으로 등록.
 - Docker registry 인증을 위한 secret 생성.
 
@@ -70,6 +70,21 @@ openssl x509 -req -in jenkins.cicd.com.csr -CA cicd-rootCA.crt -CAkey cicd-rootC
   -CAcreateserial -out jenkins.cicd.com.crt -days 825 -sha256 -extfile cicd.ext
 ```
 
+### keycloak.cicd.com 도메인 인증서 생성
+- keycloak.cicd.com.key
+- keycloak.cicd.com.csr
+- keycloak.cicd.com.crt
+
+```bash
+openssl genrsa -out keycloak.cicd.com.key 2048
+
+openssl req -new -key keycloak.cicd.com.key -out keycloak.cicd.com.csr \
+  -subj "/CN=keycloak.cicd.com/O=local-cicd"
+
+openssl x509 -req -in keycloak.cicd.com.csr -CA cicd-rootCA.crt -CAkey cicd-rootCA.key \
+    -CAcreateserial -out keycloak.cicd.com.crt -days 825 -sha256 -extfile cicd.ext
+```
+
 ## Kubernetes TLS secret 생성
 ### argocd.cicd.com 도메인 인증서 등록
 - namespace: argocd
@@ -91,4 +106,15 @@ kubectl create secret tls jenkins-tls \
     --cert=jenkins.cicd.com.crt \
     --key=jenkins.cicd.com.key \
     -n cicd-jenkins --dry-run=client -o yaml > jenkins.cicd.com.yaml
+```
+
+### keycloak.cicd.com 도메인 인증서 등록
+- namespace: keycloak
+- keycloak-tls
+
+```bash
+kubectl create secret tls keycloak-tls \
+    --cert=keycloak.cicd.com.crt \
+    --key=keycloak.cicd.com.key \
+    -n keycloak --dry-run=client -o yaml > keycloak.cicd.com.yaml
 ```
