@@ -38,6 +38,7 @@ subjectAltName = @alt_names
 [alt_names]
 DNS.1=argocd.cicd.com
 DNS.2=jenkins.cicd.com
+DNS.3=keycloak.cicd.com
 ```
 
 ### argocd.cicd.com 도메인 인증서 생성
@@ -118,3 +119,9 @@ kubectl create secret tls keycloak-tls \
     --key=keycloak.cicd.com.key \
     -n keycloak --dry-run=client -o yaml > keycloak.cicd.com.yaml
 ```
+
+
+###
+kubectl create configmap cicd-rootca \
+--from-file=cicd-rootCA.crt \
+-n cicd-jenkins

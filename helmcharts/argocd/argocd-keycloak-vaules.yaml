@@ -1,59 +1,14 @@
-dex:
-  enabled: false
-
 global:
-  nodeSelector:
-    app: argocd
-
-configs:
-  cm:
-    url.insecure: false
-    server.insecure: true
-    oidc.config: |
-      name: Keycloak
-      issuer: https://keycloak.cicd.com/realms/master
-      clientID: argocd-cicd
-      clientSecret: Vb424xkU9aM42oCHYr7lg6LowtPLjVP8
-      requestedScopes: ["openid","profile","email","groups"]
-      rootCA: |
-        -----BEGIN CERTIFICATE-----
-        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
-        -----END CERTIFICATE-----     
-
-  params:
-    server.insecure: true
+  domain: argocd.cicd.com
 
 server:
-  service:
-    type: ClusterIP
-
-  insecure: true
   ingress:
-    enabled: false
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    tls: true
+
+dex:
+  enabled: false
