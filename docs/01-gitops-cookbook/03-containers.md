@@ -145,5 +145,6 @@ Linux Container 에서 사용가능함
 - https://devocean.sk.com/blog/techBoardDetail.do?ID=165515&boardType=techBlog
 
 ### 참고 문서
-- [Ubuntu 24.04  containerd 설정 방법](../containerd/containerd-configure-ubuntu-24.04.md)
-- [기본 containerd 설정 값](../../assets/containerd-default-config.toml)
+### 참고 문서
+- [Ubuntu 24.04 containerd 설정 방법](../99-references/containerd-setup.md)
+- [기본 containerd 설정 값](../../examples/containerd/config.toml)

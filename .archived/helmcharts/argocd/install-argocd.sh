@@ -1,1 +1,0 @@
- helm install argocd argo/argo-cd --version 9.1.0 -f argocd-keycloak-vaules.yaml -n argocd 

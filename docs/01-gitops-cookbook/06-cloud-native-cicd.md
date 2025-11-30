@@ -66,10 +66,10 @@ tkn version
 
 **예시: 간단한 Build → Test 파이프라인**
 
-* [task-build.yaml](../../assets/tekton/task-build.yaml)
-* [task-test.yaml](../../assets/tekton/task-test.yaml)
-* [pipeline.yaml](../../assets/tekton/pipeline.yaml)
-* [pipelinerun.yaml](../../assets/tekton/pipelinerun.yaml)
+* [task-build.yaml](../../examples/tekton/task-build.yaml)
+* [task-test.yaml](../../examples/tekton/task-test.yaml)
+* [pipeline.yaml](../../examples/tekton/pipeline.yaml)
+* [pipelinerun.yaml](../../examples/tekton/pipelinerun.yaml)
 
 실행:
 
