@@ -1,0 +1,197 @@
+// Jenkins Pipeline: 기본 Dynamic Secrets 사용 예제
+// 이 Jenkinsfile은 Vault에서 Database Dynamic Secrets를 가져와 사용합니다.
+
+@Library('shared-library') _
+
+pipeline {
+    agent any
+    
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timestamps()
+    }
+    
+    environment {
+        VAULT_ADDR = 'http://vault.vault.svc.cluster.local:8200'
+        DB_HOST = 'postgres.default.svc.cluster.local'
+        DB_NAME = 'myappdb'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out source code...'
+                checkout scm
+            }
+        }
+        
+        stage('Get Dynamic Secrets') {
+            steps {
+                script {
+                    echo 'Fetching database credentials from Vault...'
+                    
+                    // Vault에서 Dynamic Secret 가져오기
+                    def secrets = [
+                        [
+                            path: 'database/creds/readwrite',
+                            engineVersion: 1,
+                            secretValues: [
+                                [envVar: 'DB_USERNAME', vaultKey: 'username'],
+                                [envVar: 'DB_PASSWORD', vaultKey: 'password']
+                            ]
+                        ]
+                    ]
+                    
+                    def configuration = [
+                        vaultUrl: env.VAULT_ADDR,
+                        vaultCredentialId: 'vault-approle',
+                        engineVersion: 1
+                    ]
+                    
+                    withVault([configuration: configuration, vaultSecrets: secrets]) {
+                        echo "Successfully obtained database credentials"
+                        echo "Username: ${env.DB_USERNAME}"
+                        
+                        // 데이터베이스 연결 테스트
+                        sh '''
+                            echo "Testing database connection..."
+                            PGPASSWORD=$DB_PASSWORD psql \
+                                -h $DB_HOST \
+                                -U $DB_USERNAME \
+                                -d $DB_NAME \
+                                -c "SELECT version();"
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Run Database Migration') {
+            steps {
+                script {
+                    def secrets = [
+                        [
+                            path: 'database/creds/readwrite',
+                            secretValues: [
+                                [envVar: 'DB_USER', vaultKey: 'username'],
+                                [envVar: 'DB_PASS', vaultKey: 'password']
+                            ]
+                        ]
+                    ]
+                    
+                    withVault([
+                        vaultSecrets: secrets,
+                        configuration: [
+                            vaultUrl: env.VAULT_ADDR,
+                            vaultCredentialId: 'vault-approle'
+                        ]
+                    ]) {
+                        echo 'Running database migrations...'
+                        sh """
+                            # Flyway 또는 다른 마이그레이션 도구 사용
+                            flyway migrate \
+                                -url=jdbc:postgresql://${DB_HOST}:5432/${DB_NAME} \
+                                -user=${DB_USER} \
+                                -password=${DB_PASS} \
+                                -locations=filesystem:./migrations
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                echo 'Building application...'
+                sh '''
+                    # 애플리케이션 빌드
+                    make build
+                '''
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                script {
+                    // 테스트용 DB 자격 증명 (readonly)
+                    def secrets = [
+                        [
+                            path: 'database/creds/readonly',
+                            secretValues: [
+                                [envVar: 'TEST_DB_USER', vaultKey: 'username'],
+                                [envVar: 'TEST_DB_PASS', vaultKey: 'password']
+                            ]
+                        ]
+                    ]
+                    
+                    withVault([
+                        vaultSecrets: secrets,
+                        configuration: [
+                            vaultUrl: env.VAULT_ADDR,
+                            vaultCredentialId: 'vault-approle'
+                        ]
+                    ]) {
+                        echo 'Running tests...'
+                        sh '''
+                            export DATABASE_URL="postgresql://$TEST_DB_USER:$TEST_DB_PASS@$DB_HOST:5432/$DB_NAME"
+                            make test
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    // 배포용 Kubernetes Secret 생성
+                    def secrets = [
+                        [
+                            path: 'database/creds/readwrite',
+                            secretValues: [
+                                [envVar: 'DEPLOY_DB_USER', vaultKey: 'username'],
+                                [envVar: 'DEPLOY_DB_PASS', vaultKey: 'password']
+                            ]
+                        ]
+                    ]
+                    
+                    withVault([
+                        vaultSecrets: secrets,
+                        configuration: [
+                            vaultUrl: env.VAULT_ADDR,
+                            vaultCredentialId: 'vault-approle'
+                        ]
+                    ]) {
+                        echo 'Deploying to Kubernetes...'
+                        sh '''
+                            # Kubernetes Secret 생성
+                            kubectl create secret generic app-db-creds \
+                                --from-literal=username=$DEPLOY_DB_USER \
+                                --from-literal=password=$DEPLOY_DB_PASS \
+                                --dry-run=client -o yaml | kubectl apply -f -
+                            
+                            # 애플리케이션 배포
+                            kubectl apply -f k8s/deployment.yaml
+                            kubectl rollout status deployment/myapp
+                        '''
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+            echo 'Vault automatically revoked all dynamic credentials.'
+        }
+        failure {
+            echo 'Pipeline failed!'
+            echo 'Vault will automatically revoke credentials.'
+        }
+        always {
+            echo 'Cleaning up...'
+            // 추가 정리 작업
+        }
+    }
+}
