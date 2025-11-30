@@ -40,7 +40,7 @@ Vault는 다양한 인증 방법을 지원합니다:
 - 보안 감사 및 컴플라이언스 요구사항 충족
 - 이상 행동 탐지 및 분석
 
-## Vault 아키�ekstur
+## Vault 아키텍쳐
 
 ```mermaid
 graph TB

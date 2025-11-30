@@ -131,6 +131,116 @@ openssl x509 -req -in keycloak.cicd.com.csr \
   -extfile cicd.ext
 ```
 
+### 와일드카드 인증서 생성 (선택사항)
+
+하나의 인증서로 모든 서브도메인을 커버하려면:
+
+```bash
+# SAN 설정 파일 (와일드카드 포함)
+cat > wildcard-cicd.ext << EOF
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1=*.cicd.com
+DNS.2=cicd.com
+EOF
+
+# 와일드카드 인증서 생성
+openssl genrsa -out wildcard.cicd.com.key 2048
+
+openssl req -new -key wildcard.cicd.com.key \
+  -out wildcard.cicd.com.csr \
+  -subj "/CN=*.cicd.com/O=local-cicd"
+
+openssl x509 -req -in wildcard.cicd.com.csr \
+  -CA cicd-rootCA.crt \
+  -CAkey cicd-rootCA.key \
+  -CAcreateserial \
+  -out wildcard.cicd.com.crt \
+  -days 825 \
+  -sha256 \
+  -extfile wildcard-cicd.ext
+```
+
+> [!TIP]
+> 와일드카드 인증서는 `argocd.cicd.com`, `jenkins.cicd.com`, `keycloak.cicd.com` 모두에 사용할 수 있습니다.
+
+### 자동화 스크립트
+
+모든 인증서를 한 번에 생성하는 스크립트:
+
+```bash
+cat > generate-certs.sh << 'EOF'
+#!/bin/bash
+
+set -e
+
+# 색상 코드
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}인증서 생성 시작...${NC}"
+
+# 1. Root CA 생성
+if [ ! -f cicd-rootCA.key ]; then
+  echo -e "${YELLOW}Root CA 생성 중...${NC}"
+  openssl genrsa -out cicd-rootCA.key 4096
+  openssl req -x509 -new -nodes -sha512 -days 3650 \
+    -key cicd-rootCA.key \
+    -out cicd-rootCA.crt \
+    -subj "/CN=cicd-rootCA/O=local-cicd"
+  echo -e "${GREEN}✓ Root CA 생성 완료${NC}"
+else
+  echo -e "${YELLOW}Root CA가 이미 존재합니다.${NC}"
+fi
+
+# 2. SAN 설정 파일
+cat > cicd.ext << EOL
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1=argocd.cicd.com
+DNS.2=jenkins.cicd.com
+DNS.3=keycloak.cicd.com
+EOL
+
+# 3. 각 서비스별 인증서 생성
+for domain in argocd.cicd.com jenkins.cicd.com keycloak.cicd.com; do
+  echo -e "${YELLOW}$domain 인증서 생성 중...${NC}"
+  
+  openssl genrsa -out ${domain}.key 2048
+  openssl req -new -key ${domain}.key -out ${domain}.csr \
+    -subj "/CN=${domain}/O=local-cicd"
+  openssl x509 -req -in ${domain}.csr \
+    -CA cicd-rootCA.crt \
+    -CAkey cicd-rootCA.key \
+    -CAcreateserial \
+    -out ${domain}.crt \
+    -days 825 \
+    -sha256 \
+    -extfile cicd.ext
+    
+  echo -e "${GREEN}✓ $domain 인증서 생성 완료${NC}"
+done
+
+# 4. CSR 파일 삭제
+rm -f *.csr cicd-rootCA.srl
+
+echo -e "${GREEN}모든 인증서 생성 완료!${NC}"
+echo -e "파일 목록:"
+ls -lh *.crt *.key | awk '{print "  " $9 " (" $5 ")" }'
+EOF
+
+chmod +x generate-certs.sh
+./generate-certs.sh
+```
+
 ## ☸️ 4단계: Kubernetes TLS Secret 생성
 
 ### ArgoCD TLS Secret
@@ -280,6 +390,107 @@ rm *.csr                  # CSR 파일들
 rm cicd-rootCA.srl        # Serial 파일
 ```
 
+## 🌐 고급 기능
+
+### cert-manager 사용하기
+
+프로덕션 환경에서는 cert-manager를 사용하여 인증서를 자동으로 관리할 수 있습니다:
+
+```bash
+# cert-manager 설치
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.0/cert-manager.yaml
+
+# 설치 확인
+kubectl get pods -n cert-manager
+```
+
+**Self-signed ClusterIssuer 예시:**
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-certificate
+  namespace: argocd
+spec:
+  secretName: argocd-tls
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - argocd.cicd.com
+```
+
+### 인증서 로테이션
+
+인증서가 곳 만료될 때를 대비한 로테이션 절차:
+
+```bash
+# 1. 새 인증서 생성
+./generate-certs.sh
+
+# 2. 새 Secret 생성 (GitOps 방식)
+kubectl create secret tls argocd-tls-new \
+  --cert=argocd.cicd.com.crt \
+  --key=argocd.cicd.com.key \
+  -n argocd \
+  --dry-run=client -o yaml > argocd-tls-new.yaml
+
+# 3. 기존 Secret 백업
+kubectl get secret argocd-tls -n argocd -o yaml > argocd-tls-backup.yaml
+
+# 4. Secret 업데이트
+kubectl delete secret argocd-tls -n argocd
+kubectl apply -f argocd-tls-new.yaml
+kubectl patch secret argocd-tls-new -n argocd \
+  --type='json' -p='[{"op": "replace", "path": "/metadata/name", "value":"argocd-tls"}]'
+
+# 5. Ingress Controller 재시작 (필요시)
+kubectl rollout restart deployment ingress-nginx-controller -n ingress-nginx
+```
+
+### 다중 도메인 인증서 (SAN)
+
+하나의 인증서로 여러 도메인 커버:
+
+```bash
+# 복수 도메인 SAN 설정
+cat > multi-domain.ext << EOF
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1=app.cicd.com
+DNS.2=api.cicd.com
+DNS.3=www.app.cicd.com
+IP.1=192.168.1.100
+EOF
+
+# 인증서 생성
+openssl genrsa -out multi.key 2048
+openssl req -new -key multi.key -out multi.csr \
+  -subj "/CN=app.cicd.com/O=local-cicd"
+openssl x509 -req -in multi.csr \
+  -CA cicd-rootCA.crt \
+  -CAkey cicd-rootCA.key \
+  -CAcreateserial \
+  -out multi.crt \
+  -days 825 \
+  -sha256 \
+  -extfile multi-domain.ext
+
+# SAN 확인
+openssl x509 -in multi.crt -text -noout | grep -A1 "Subject Alternative Name"
+```
+
 ## 🛠️ 유용한 명령어
 
 ### Secret 목록 확인
@@ -334,6 +545,71 @@ kubectl get secrets -n argocd
 
 # Secret 형식 확인
 kubectl get secret argocd-tls -n argocd -o yaml
+```
+
+### 인증서 포맷 변환
+
+```bash
+# PEM → DER
+openssl x509 -in argocd.cicd.com.crt -outform DER -out argocd.cicd.com.der
+
+# PEM → PKCS12 (.pfx/.p12)
+openssl pkcs12 -export -out argocd.cicd.com.p12 \
+  -inkey argocd.cicd.com.key \
+  -in argocd.cicd.com.crt \
+  -certfile cicd-rootCA.crt
+
+# PKCS12 → PEM
+openssl pkcs12 -in argocd.cicd.com.p12 -out argocd.cicd.com.pem -nodes
+```
+
+### 인증서 정보 상세 확인
+
+```bash
+# 전체 인증서 정보
+openssl x509 -in argocd.cicd.com.crt -text -noout
+
+# 특정 필드만 표시
+openssl x509 -in argocd.cicd.com.crt -noout \
+  -subject -issuer -dates -serial
+
+# SAN (Subject Alternative Names) 확인
+openssl x509 -in argocd.cicd.com.crt -noout -ext subjectAltName
+
+# 공개키 확인
+openssl x509 -in argocd.cicd.com.crt -noout -pubkey
+
+# 인증서 지문 (Fingerprint)
+openssl x509 -in argocd.cicd.com.crt -noout -fingerprint -sha256
+```
+
+### Secret의 인증서 유효기간 확인
+
+```bash
+# Kubernetes Secret에서 인증서 추출 및 만료일 확인
+kubectl get secret argocd-tls -n argocd -o jsonpath='{.data.tls\.crt}' | \
+  base64 -d | \
+  openssl x509 -noout -enddate
+
+# 모든 TLS Secret의 만료일 확인 스크립트
+for ns in $(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}'); do
+  for secret in $(kubectl get secrets -n $ns -o jsonpath='{.items[?(@.type=="kubernetes.io/tls")].metadata.name}'); do
+    echo -n "$ns/$secret: "
+    kubectl get secret $secret -n $ns -o jsonpath='{.data.tls\.crt}' | \
+      base64 -d | \
+      openssl x509 -noout -enddate
+  done
+done
+```
+
+### CA 인증서 제거 (macOS)
+
+```bash
+# Keychain에서 CA 제거
+sudo security delete-certificate -c "cicd-rootCA" \
+  /Library/Keychains/System.keychain
+
+# 또는 Keychain Access 앱에서 수동 삭제
 ```
 
 ## 📚 다음 단계
