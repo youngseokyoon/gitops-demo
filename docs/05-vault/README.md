@@ -37,6 +37,16 @@
    - Pipeline 예제
    - Best Practices
 
+7. [High Availability (HA)](./07-high-availability.md)
+   - Raft Storage 구성
+   - Leader Election 및 Failover
+   - 백업 및 복구
+
+8. [MCP Integration](./08-mcp-integration.md)
+   - Model Context Protocol 개요
+   - Vault MCP Server 구현 (Python)
+   - Kubernetes 배포 및 활용
+
 ## 🛠️ 실습 환경
 
 이 문서의 모든 실습은 다음 환경을 기준으로 작성되었습니다:
@@ -49,6 +59,8 @@
 ## 📁 예제 파일
 
 [examples](./examples/) 디렉토리에는 실습에 필요한 모든 YAML 파일과 스크립트가 포함되어 있습니다.
+- `ha-values.yaml`: HA 구성용 Helm Values
+- `mcp-server/`: Vault MCP 서버 예제 코드 및 배포 설정
 
 ## 🚀 시작하기
 

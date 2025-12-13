@@ -1,0 +1,68 @@
+# Vault HA Helm Values
+# HA (Raft Storage) 구성을 위한 설정 파일
+
+server:
+  # HA 모드 활성화
+  ha:
+    enabled: true
+    replicas: 3  # 3개의 복제본 (홀수 권장)
+    
+    # Raft Integrated Storage 설정
+    raft:
+      enabled: true
+      setNodeId: true
+      
+      config: |
+        ui = true
+
+        listener "tcp" {
+          tls_disable = 1
+          address = "[::]:8200"
+          cluster_address = "[::]:8201"
+        }
+
+        storage "raft" {
+          path = "/vault/data"
+          
+          # 재시작 시 자동 Join을 위한 retry_join 설정 (K8s)
+          retry_join {
+            leader_api_addr = "http://vault-0.vault-internal:8200"
+          }
+          retry_join {
+            leader_api_addr = "http://vault-1.vault-internal:8200"
+          }
+          retry_join {
+            leader_api_addr = "http://vault-2.vault-internal:8200"
+          }
+        }
+
+        service_registration "kubernetes" {}
+
+  # Affinity 설정 완화 (Kind 등 단일 노드 환경 지원)
+  # 기본적으로 PodAntiAffinity가 설정되어 있어 단일 노드에서 스케줄링 실패함
+  affinity: ""
+  
+  # 데이터 지속성 설정
+  dataStorage:
+    enabled: true
+    size: 10Gi
+    storageClass: null  # Kind 기본 스토리지 클래스 사용
+
+  # 리소스 제한 (테스트 환경용)
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# UI 활성화
+ui:
+  enabled: true
+  serviceType: NodePort
+  serviceNodePort: 32000
+
+# 글로벌 설정
+global:
+  tlsDisable: true
