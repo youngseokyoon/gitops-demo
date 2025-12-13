@@ -62,6 +62,10 @@
 - `ha-values.yaml`: HA 구성용 Helm Values
 - `mcp-server/`: Vault MCP 서버 예제 코드 및 배포 설정
 
+## 📝 변경 이력
+
+- **[CHANGELOG.md](./CHANGELOG.md)**: 작업 중 발생한 이슈 및 해결 과정 기록
+
 ## 🚀 시작하기
 
 1. [Vault 개요](./01-vault-overview.md) 문서를 읽고 Vault에 대한 기본 이해를 습득하세요.
